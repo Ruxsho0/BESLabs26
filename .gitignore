@@ -1,0 +1,11 @@
+compile_commands.json
+.cache/
+*.d
+*.map
+*.o
+!verify.o
+!test_*.o
+*.out
+*.axf
+*.bin
+test_runner

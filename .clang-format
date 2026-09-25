@@ -1,0 +1,11 @@
+BasedOnStyle: Google
+ColumnLimit: 100
+IndentWidth: 4
+AllowShortEnumsOnASingleLine: false
+PenaltyBreakAssignment: 200
+AlignConsecutiveMacros: Consecutive
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+IndentCaseLabels: false
+SortIncludes: false
+PointerAlignment: Right

@@ -1,0 +1,9 @@
+# Force LF line endings for code, build scripts, and configs across OSes
+* text=auto eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.ld text eol=lf
+Makefile text eol=lf
+*.sh text eol=lf
+*.json text eol=lf
+*.o binary

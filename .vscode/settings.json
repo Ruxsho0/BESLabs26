@@ -1,0 +1,26 @@
+{
+  // Ruler to visualize line max length to maintain clean code
+  "editor.rulers": [100],
+
+  // Disable Microsoft C/C++ IntelliSense ONLY for this workspace to prevent
+  // conflicts with clangd
+  "C_Cpp.intelliSenseEngine": "disabled",
+
+  // Custom flags passed to clangd language server binary
+  "clangd.arguments": [
+    "--query-driver=**/*arm-none-eabi*",
+
+    // Set by default, keep it to ensure predictability
+    "--background-index",
+
+    // Shows every function signature and parameter type in the 
+    // autocompletion dropdown menu
+    "--completion-style=detailed",
+    
+    // Disable header auto-insertion when using auto-complete
+    "--header-insertion=never"
+  ],
+
+  // Automatically format C/C++ code every time you save a file
+  //"editor.formatOnSave": true
+}
