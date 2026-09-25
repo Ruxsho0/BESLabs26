@@ -1,73 +1,112 @@
 /*
-    Lab3 - Port initialization, Delay, LED control
+    Lab6 - µC Debugging
 
-    Navigate to the led_control.c to finish the SetOrToggleLED() function.
-    Finish the main function and the PortF initialization.
+    Navigate to the bits.c to finish the ToggledBits function.
+    Finish DetectInputChange function. Fix DELAY_50MS value.
 */
 
-#include "led_control.h"
 #include "verify.h"
+#include "bits.h"
 
-#define GPIO_PORTF_DATA_R       (*((volatile uint32_t *)0x400253FC))
-#define GPIO_PORTF_DIR_R        (*((volatile uint32_t *)0x40025400))
-#define GPIO_PORTF_AFSEL_R      (*((volatile uint32_t *)0x40025420))
-#define GPIO_PORTF_PUR_R        (*((volatile uint32_t *)0x40025510))
-#define GPIO_PORTF_DEN_R        (*((volatile uint32_t *)0x4002551C))
-#define GPIO_PORTF_AMSEL_R      (*((volatile uint32_t *)0x40025528))
-#define GPIO_PORTF_PCTL_R       (*((volatile uint32_t *)0x4002552C))
-#define SYSCTL_RCGC2_R          (*((volatile uint32_t *)0x400FE108))
-#define SYSCTL_RCGC2_GPIOF      0x00000020  // Port F Clock Gating Control
+#define ARR_SIZE 50
+
+uint32_t time[ARR_SIZE] = {0}; // First data point is wrong, the other 49 will be correct
+uint32_t data[ARR_SIZE] = {0}; // Leave the array defined as it is!
+uint32_t i = 0;
+
+uint32_t before;               // GPIO_PORTF_DATA_R value before the change
+uint32_t last;                 // Last recorded time
 
 void PortFInit(void);
-void Delay100ms(uint32_t times);
+void SysTickInit(void);
+void RecordTimeAndData(void);
+void DetectInputChange(void);
+void Delay50ms(void);
 
-int main(void){
-    PortFInit(); // Student submitted subroutine
+int main(void) {
+    PortFInit();
+    SysTickInit();
     BESGrader();
-    uint32_t sw1;  // input from PF4
-    uint32_t out = 0x04;  // output for PF2
+    last = NVIC_ST_CURRENT_R;
     while (true) {
-        // Complete this functionality!
-        sw1 = GPIO_PORTF_DATA_R & 0x10;
-        Delay100ms(1);
-        out = SetOrToggleLED(sw1, out);
-        GPIO_PORTF_DATA_R = (GPIO_PORTF_DATA_R & ~0x04) | out;
+        before = GPIO_PORTF_DATA_R;
+        DetectInputChange();
+        RecordTimeAndData();
     }
 }
 
 /* 
     \brief Subroutine to initialize port F pins for input and output.
-    PF4 is SW1 input.
-    PF2 is output to the LED.
+    PF0 and PF4 is SW1 and SW2 input respectively.
+    PF1 is output to the LED.
 
     \param None
     \return None
-    \note Set the LED to be initially ON at the end of the initialization. Bit setting
-    doesn't affect other bits.
 */
 void PortFInit(void) {
-    // Complete this function!
-    SYSCTL_RCGC2_R |=0x20;// Turn on the clock for Port F
-    (void)SYSCTL_RCGC2_R;// Allow time for clock to start
-    GPIO_PORTF_AMSEL_R &= ~0x14;// Disable analog on PF4 and PF2 AMSEL
-    GPIO_PORTF_PCTL_R &= ~0x000F0F00;// Clear PF4 and PF2 bit fields PCTL to configure as GPIO
-    GPIO_PORTF_DIR_R = (GPIO_PORTF_DIR_R & ~0x10) | 0x04;// PF4 input, PF2 output
-    GPIO_PORTF_AFSEL_R &= ~0x14;// Clear PF4 and PF2 bits AFSEL to disable alternate functions
-    GPIO_PORTF_PUR_R |= 0x10;// Set PF4 PUR to activate an internal pullup resistor
-    GPIO_PORTF_DEN_R |= 0x14;// Set PF4 and PF2 bits DEN to enable digital
-    GPIO_PORTF_DATA_R |= 0x04;// Set PF2 DATA so LED is initially ON
+    volatile uint32_t delay;
+    SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;   // Activate clock for Port F
+    delay = SYSCTL_RCGC2_R;                 // Allow time for clock to start
+    GPIO_PORTF_LOCK_R = 0x4C4F434B;         // Unlock PF0
+    GPIO_PORTF_CR_R = 0x1F;                 // Allow changes to PF4-0
+    GPIO_PORTF_AMSEL_R = 0x00;              // Disable analog on PortF
+    GPIO_PORTF_PCTL_R = 0x00000000;         // PCTL GPIO on PF4-0
+    GPIO_PORTF_DIR_R |= 0x0E;               // PF4, PF0 in, PF1 out
+    GPIO_PORTF_AFSEL_R = 0x00;              // Disable alt funct on PF7-0
+    GPIO_PORTF_PUR_R |= 0x11;               // Enable pull-up on PF0 and PF4
+    GPIO_PORTF_DEN_R |= 0x1F;               // Enable digital I/O on PF4-0      
 }
 
-#define DELAY_100MS 160000 // ~100ms
+/*
+    \brief Subroutine to initialize SysTick with busy wait running at bus clock
+    \param None
+    \return None
+    \note Runs at 16 MHz
+*/
+void SysTickInit(void) {
+    NVIC_ST_CTRL_R = 0;                   // Disable SysTick during setup
+    NVIC_ST_RELOAD_R = 0x00FFFFFF;        // Maximum reload value
+    NVIC_ST_CURRENT_R = 0;                // Any write to current clears it             
+    NVIC_ST_CTRL_R = 0x00000005;          // Enable SysTick with core clock
+}
+
+/* 
+    \brief Subroutine to save time and data in the arrays only if: there is still space for new values; the values
+    differ from the last.
+
+    \param None
+    \return None
+*/
+void RecordTimeAndData(void) {
+    if (i < ARR_SIZE && ToggledBits(GPIO_PORTF_DATA_R, before)) {
+        uint32_t now = NVIC_ST_CURRENT_R;      // get current clock cycles
+        time[i] = last - now;   // 24-bit time difference
+        data[i] = GPIO_PORTF_DATA_R & 0x13;    // record PF0, PF1 and PF4
+        last = now;
+        i++;
+    }
+}
+
+/* 
+    \brief Subroutine to check whether any of the switches was pressed.
+
+    \param None
+    \return None
+    \note If there is a switch press, toggle the red LED with a frequency of 10Hz. If no press,
+    the LED is off. Delay50ms is called once regardless of the input.
+*/
+void DetectInputChange(void) {
+    // Complete this function!
+}
+
+#define DELAY_50MS 100000 // Incorrect! Should be ~50ms, change this!
 
 /*
-    \brief Subroutine to delay 100 milliseconds N times
-    \param times Number of times to delay 100 ms
+    \brief Subroutine to delay 50 milliseconds
+    \param None
     \return None
     \note Assumes 16 MHz clock
 */
-void Delay100ms(uint32_t times) {
-    for (; times > 0; times--) {
-        for (volatile uint32_t i = DELAY_100MS; i > 0; i--) {}
-    }
+void Delay50ms(void) {
+    for (volatile uint32_t i = DELAY_50MS; i > 0; i--) {}
 }
