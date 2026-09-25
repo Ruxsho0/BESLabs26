@@ -1,61 +1,62 @@
 /*
-    Lab3 - Port initialization, Delay, LED control
+    Lab5 - Breadboard circuit building
 
-    Navigate to the led_control.c to finish the SetOrToggleLED() function.
-    Finish the main function and the PortF initialization.
+    Navigate to the led_interface.c to finish the SetOrToggleLED() function.
+    Finish main function and PortE initialization.
 */
 
-#include "led_control.h"
+#include "led_interface.h"
 #include "verify.h"
 
-#define GPIO_PORTF_DATA_R       (*((volatile uint32_t *)0x400253FC))
-#define GPIO_PORTF_DIR_R        (*((volatile uint32_t *)0x40025400))
-#define GPIO_PORTF_AFSEL_R      (*((volatile uint32_t *)0x40025420))
-#define GPIO_PORTF_PUR_R        (*((volatile uint32_t *)0x40025510))
-#define GPIO_PORTF_DEN_R        (*((volatile uint32_t *)0x4002551C))
-#define GPIO_PORTF_AMSEL_R      (*((volatile uint32_t *)0x40025528))
-#define GPIO_PORTF_PCTL_R       (*((volatile uint32_t *)0x4002552C))
+#define GPIO_PORTE_DATA_R       (*((volatile uint32_t *)0x400243FC))
+#define GPIO_PORTE_DIR_R        (*((volatile uint32_t *)0x40024400))
+#define GPIO_PORTE_AFSEL_R      (*((volatile uint32_t *)0x40024420))
+#define GPIO_PORTE_PUR_R        (*((volatile uint32_t *)0x40024510))
+#define GPIO_PORTE_DEN_R        (*((volatile uint32_t *)0x4002451C))
+#define GPIO_PORTE_AMSEL_R      (*((volatile uint32_t *)0x40024528))
+#define GPIO_PORTE_PCTL_R       (*((volatile uint32_t *)0x4002452C))
 #define SYSCTL_RCGC2_R          (*((volatile uint32_t *)0x400FE108))
-#define SYSCTL_RCGC2_GPIOF      0x00000020  // Port F Clock Gating Control
+#define SYSCTL_RCGC2_GPIOE      0x00000010  // Port E Clock Gating Control
 
-void PortFInit(void);
+void PortEInit(void);
 void Delay100ms(uint32_t times);
 
 int main(void){
-    PortFInit(); // Student submitted subroutine
+    PortEInit(); // Student submitted subroutine
     BESGrader();
-    uint32_t sw1;  // input from PF4
-    uint32_t out = 0x04;  // output for PF2
+    uint32_t sw;   // input from PE0
+    uint32_t out;  // output for PE1
     while (true) {
         // Complete this functionality!
-        sw1 = GPIO_PORTF_DATA_R & 0x10;
-        Delay100ms(1);
-        out = SetOrToggleLED(sw1, out);
-        GPIO_PORTF_DATA_R = (GPIO_PORTF_DATA_R & ~0x04) | out;
+        sw = GPIO_PORTE_DATA_R & 0x01; // loe lulitit PE0
+        Delay100ms(1);                  // debounce
+        out = SetOrToggleLED(sw, GPIO_PORTE_DATA_R & 0x02); // 
+        GPIO_PORTE_DATA_R = (GPIO_PORTE_DATA_R & 0x02) | out; // kirjuta PE1 tagasi
     }
 }
 
 /* 
-    \brief Subroutine to initialize port F pins for input and output.
-    PF4 is SW1 input.
-    PF2 is output to the LED.
+    \brief Subroutine to initialize port E pins for input and output.
+    PE0 is switch input.
+    PE1 is output to the LED.
 
     \param None
     \return None
     \note Set the LED to be initially ON at the end of the initialization. Bit setting
     doesn't affect other bits.
 */
-void PortFInit(void) {
+void PortEInit(void) {
     // Complete this function!
-    SYSCTL_RCGC2_R |=0x20;// Turn on the clock for Port F
-    (void)SYSCTL_RCGC2_R;// Allow time for clock to start
-    GPIO_PORTF_AMSEL_R &= ~0x14;// Disable analog on PF4 and PF2 AMSEL
-    GPIO_PORTF_PCTL_R &= ~0x000F0F00;// Clear PF4 and PF2 bit fields PCTL to configure as GPIO
-    GPIO_PORTF_DIR_R = (GPIO_PORTF_DIR_R & ~0x10) | 0x04;// PF4 input, PF2 output
-    GPIO_PORTF_AFSEL_R &= ~0x14;// Clear PF4 and PF2 bits AFSEL to disable alternate functions
-    GPIO_PORTF_PUR_R |= 0x10;// Set PF4 PUR to activate an internal pullup resistor
-    GPIO_PORTF_DEN_R |= 0x14;// Set PF4 and PF2 bits DEN to enable digital
-    GPIO_PORTF_DATA_R |= 0x04;// Set PF2 DATA so LED is initially ON
+    volatile uint32_t delay;
+    SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOE;// Turn on the clock for Port E
+	delay = SYSCTL_RCGC2_R;// Allow time for clock to start
+	GPIO_PORTE_AMSEL_R &= ~ 0x03;// Disable analog on PE1 and PE0 AMSEL
+	GPIO_PORTE_PCTL_R &= ~0x000000FF;// Clear PE1 and PE0 bit fields PCTL to configure as GPIO
+	GPIO_PORTE_DIR_R = (GPIO_PORTE_DIR_R & ~0x01) | 0x02;// PE0 in, PE1 out
+	GPIO_PORTE_AFSEL_R &= ~0x03;// Clear PE1 and PE0 bits AFSEL to disable alternate functions
+	GPIO_PORTE_PUR_R &= ~0x03;// Clear PE1 and PE0 PUR
+	GPIO_PORTE_DEN_R |= 0x03;// Set PE1 and PE0 bits DEN to enable digital
+	GPIO_PORTE_DATA_R |= 0x02;// Set PE1 so LED is initially ON      
 }
 
 #define DELAY_100MS 160000 // ~100ms
