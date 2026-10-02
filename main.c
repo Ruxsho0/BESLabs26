@@ -97,9 +97,17 @@ void RecordTimeAndData(void) {
 */
 void DetectInputChange(void) {
     // Complete this function!
+    Delay50ms(); // kutsutakse väli ÜKS kord, sõltumata sisendist
+    if ((GPIO_PORTF_DATA_R & 0x11) != 0x11) {
+        // PF4 või PF0 on 0 (vajutatud, kuna pull-up hoiab vaikimisi kõrgel)
+        GPIO_PORTF_DATA_R ^= 0x02; // toggle PF1 ühe XOR-iga
+    } else {
+        // mõlemad lülitid vabastatud
+        GPIO_PORTF_DATA_R &= ~0x02;
+    }
 }
 
-#define DELAY_50MS 100000 // Incorrect! Should be ~50ms, change this!
+#define DELAY_50MS 79300 // Incorrect! Should be ~50ms, change this!
 
 /*
     \brief Subroutine to delay 50 milliseconds
