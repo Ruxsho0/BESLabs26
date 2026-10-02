@@ -28,12 +28,12 @@ int main(void){
     uint32_t out;  // output for PE1
     while (true) {
         // Complete this functionality!
-        sw = GPIO_PORTE_DATA_R & 0x01; // loe lulitit PE0
-        Delay100ms(1);                  // debounce
-        out = SetOrToggleLED(sw, GPIO_PORTE_DATA_R & 0x02); // 
-        GPIO_PORTE_DATA_R = (GPIO_PORTE_DATA_R & 0x02) | out; // kirjuta PE1 tagasi
+        sw = GPIO_PORTE_DATA_R & 0x01;                          // loe lülitit PE0
+        Delay100ms(1);                                           // oota ~100ms
+        out = SetOrToggleLED(sw, GPIO_PORTE_DATA_R & 0x02);      // otsusta uus LED olek
+        GPIO_PORTE_DATA_R = (GPIO_PORTE_DATA_R & ~0x02) | out;   // kirjuta PE1 tagasi
     }
-}
+    }
 
 /* 
     \brief Subroutine to initialize port E pins for input and output.
