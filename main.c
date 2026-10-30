@@ -18,22 +18,22 @@ void OLEDprint(const char* unit, const char* str, uint8_t page);
 // Should remain untouched!
 int main(void) {
     ConfigureUART();
-    //ConfigureDisplay();                   // Uncomment when OLED is connected!
+    ConfigureDisplay();                   // Uncomment when OLED is connected!
     char str[BUF_SIZE];
     uint32_t num;
     UARTprintf("\nConversion program\n");
     while (true) {
-        //DisplayClear();                   // Uncomment when OLED is connected!
+        SSD1306DisplayClear();                   // Uncomment when OLED is connected!
         UARTprintf("\nInput: ");
         UARTgets(str, BUF_SIZE);
         num = atoi(str);
         ConvertDec(num, str);
         UARTprintf("Dec = %s, ", str);
-        //OLEDprint("Dec = ", str, 0);      // Uncomment when OLED is connected!
+        OLEDprint("Dec = ", str, 0);      // Uncomment when OLED is connected!
         ConvertDistance(num, str);
         UARTprintf("Distance ~ %s", str);
-        //OLEDprint("Distance ~ ", str, 2); // Uncomment when OLED is connected!
-        //DisplayUpdate();                  // Uncomment when OLED is connected!
+        OLEDprint("Distance ~ ", str, 2); // Uncomment when OLED is connected!
+        SSD1306DisplayUpdate();                  // Uncomment when OLED is connected!
     }
 }
 
@@ -46,7 +46,7 @@ int main(void) {
 */
 void ConfigureDisplay(void) {
     I2C3Config();
-    DisplayInit();
+    SSD1306DisplayInit();
 }
 
 /*
@@ -57,7 +57,7 @@ void ConfigureDisplay(void) {
     \return None
 */
 void OLEDprint(const char* unit, const char* str, uint8_t page) {
-    SetCursor(0, page);
-    DrawStr(unit);
-    DrawStr(str);
+    SSD1306SetCursor(0, page);
+    SSD1306DrawStr(unit);
+    SSD1306DrawStr(str);
 }
