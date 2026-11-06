@@ -3,7 +3,10 @@
 
 #include <stdint.h>
 
-#ifndef GPIO_PORTB_DATA_R
+#ifdef USE_MOCK_REGISTERS
+extern uint32_t gpio_portb_data;
+#define GPIO_PORTB_DATA_R gpio_portb_data
+#else
 #define GPIO_PORTB_DATA_R       (*((volatile uint32_t *)0x400053FC))
 #endif
 

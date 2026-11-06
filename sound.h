@@ -3,7 +3,10 @@
 
 #include <stdint.h>
 
-#ifndef NVIC_ST_RELOAD_R
+#ifdef USE_MOCK_REGISTERS 
+extern uint32_t nvic_st_reload;
+#define NVIC_ST_RELOAD_R nvic_st_reload
+#else
 #define NVIC_ST_RELOAD_R        (*((volatile uint32_t *)0xE000E014))
 #endif
 

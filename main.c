@@ -21,6 +21,9 @@ int main(void) {
     BESGrader();
     while (true) {
         // Complete functionality!
+        uint32_t input = PianoInput();
+        uint32_t period = ChooseNote(input);
+        SoundPlay(period);
     }
 }
 
